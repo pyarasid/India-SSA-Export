@@ -1,0 +1,91 @@
+---
+title: "India's Exports to Sub-Saharan Africa"
+author: "Siddharth Dixit"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+    source_code: embed
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(tidyverse)
+library(plotly)
+library(reshape2)
+library(dplyr)
+library(readxl)
+library(scales)
+library(rsconnect)
+
+india_export <- read_excel("india_export.xlsx")
+```
+
+Input {.sidebar}
+-----------------------------------------------------------------------
+
+### Select Input
+
+```{r}
+hr()
+#select the product group
+selectInput(inputId="group",
+                 label="Select One or Multiple Product Group by Clicking in the Box:",
+                 choices=unique(india_export$group),
+                 selected="Raw materials",
+                 multiple=TRUE)
+hr()
+#select the range of years
+    sliderInput(inputId="time",
+                label = "Select the Range of Years:",
+                min = 1989, max= 2016,
+                value = c(1989, 2016),
+                step = 1, sep = "")
+    
+    plotlydata <- reactive({
+    india_export %>% 
+      filter(group %in% input$group) %>% 
+      filter(Year %in% seq(input$time[1], input$time[2], 1)) 
+    })
+```
+
+
+The plots created here are taken from the paper by Chinmoy, Gill & Dixit on India and Sub-Saharn Africa's Trade and Investment. 
+
+This paper is part of a set of four papers exploring Sub-Saharan Africa's growth, debt, and its trade and investment relationships with major emerging economies of China and India.
+
+The paper exploring Africa's growth can be assessed at:
+https://www.brookings.edu/wp-content/uploads/2018/06/Africa-Growth-Paper_Gill-and-Karakulah.pdf
+
+
+
+columns {data-width=350}
+-----------------------------------------------------------------------
+
+### Value of India's exports of various product groups to Sub-Saharan Africa 
+
+```{r}
+renderPlotly({
+  ggplotly(ggplot(data = plotlydata() %>% filter(Indicator=="Export (US$ Million)"), mapping = aes(x=Year, y= trade_value)) +
+    geom_line(aes(group=group, color= group), size=1) +geom_point(aes(color=group))+ 
+      scale_y_continuous(label=comma) +theme_classic()+
+      theme(axis.text.x = element_text(angle = 55, hjust=1, size=12),axis.title = element_text(size=12, face="bold"),
+            axis.text.y = element_text(angle = 55, face="bold", size=12), legend.title = element_text(size= 12, face="bold")) +
+      labs(x="Years", y="Export Value (in Million Dollars)", color="Product Group"))
+})
+```
+
+### Percentage share of India's exports of various product groups to Sub-Saharan Africa 
+
+```{r}
+ renderPlotly({
+    ggplotly(ggplot(data = plotlydata() %>% filter(Indicator=="Export-Share"), mapping = aes(x=Year, y=trade_value))+
+             geom_line(aes(group=group, colour=group), size=1)+geom_point(aes(color=group))+
+               scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0,0.8))+ theme_classic()+
+               theme(axis.text.x = element_text(angle = 55, hjust=1, size = 12),axis.title = element_text(face = "bold", size=12), axis.text.y = element_text(angle=55, face = "bold", size=12))+
+               labs(x="Years", y="Export Share (in percentage)", color="Product Group"))
+ })
+```
+
