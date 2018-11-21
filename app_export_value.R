@@ -23,7 +23,7 @@ ui <- fluidPage(
                 label = "Select the range of years",
                 min = 1989, max= 2016,
                 value = c(1989, 2016),
-                step = 1)
+                step = 1, sep="")
     ),
     #Main panel
     mainPanel(
